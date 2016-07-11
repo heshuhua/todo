@@ -16,6 +16,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
+
 @SpringBootApplication
 @EnableDiscoveryClient
 @IntegrationComponentScan
@@ -48,13 +51,36 @@ class ClientTodo
 		this.todoReader=reader;
 	}
 	
+	
+	@HystrixCommand(fallbackMethod = "fallback",commandProperties={
+            @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "1200")
+        },
+                threadPoolProperties = {
+                        @HystrixProperty(name = "coreSize", value = "10"),
+                        @HystrixProperty(name = "maxQueueSize", value = "101"),
+                        @HystrixProperty(name = "keepAliveTimeMinutes", value = "2"),
+                        @HystrixProperty(name = "queueSizeRejectionThreshold", value = "15"),
+                        @HystrixProperty(name = "metrics.rollingStats.numBuckets", value = "12"),
+                        @HystrixProperty(name = "metrics.rollingStats.timeInMilliseconds", value = "1440")
+        })
 	@RequestMapping(method=RequestMethod.GET)
 	public Collection<Todo> findTodo()
 	{
 		Collection<Todo> result=new ArrayList<Todo>();
 		
 		result = todoReader.read();
+			System.out.println("normal");
 		
+		
+		return result;
+	}
+	
+	public Collection<Todo> fallback() {
+		Collection<Todo> result=new ArrayList<Todo>();
+		Todo aTodo=new Todo();
+		aTodo.setTitle("heshuhua");
+		System.out.println("heshuhua");
+		result.add(aTodo);
 		return result;
 	}
 }
