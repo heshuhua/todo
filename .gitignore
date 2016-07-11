@@ -5,7 +5,7 @@
 
 *.ear
 *.class
-*.properties
+#*.properties
 
 # eclipse specific git ignore
 *.pydevproject
