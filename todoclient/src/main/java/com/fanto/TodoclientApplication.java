@@ -12,6 +12,7 @@ import org.springframework.cloud.netflix.feign.EnableFeignClients;
 import org.springframework.cloud.netflix.feign.FeignClient;
 import org.springframework.cloud.netflix.zuul.EnableZuulProxy;
 import org.springframework.integration.annotation.IntegrationComponentScan;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -37,6 +38,9 @@ interface TodoReader {
 
 	@RequestMapping (method = RequestMethod.GET, value = "/todos")
 	public Collection<Todo> read();
+	
+	@RequestMapping (method = RequestMethod.POST, value = "/todos")
+	public void write(@RequestBody Todo todo);
 }
 
 @RestController
@@ -83,6 +87,31 @@ class ClientTodo
 		result.add(aTodo);
 		return result;
 	}
+	
+	
+	@HystrixCommand(fallbackMethod = "fallbackwrite",commandProperties={
+            @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "1200")
+        },
+                threadPoolProperties = {
+                        @HystrixProperty(name = "coreSize", value = "10"),
+                        @HystrixProperty(name = "maxQueueSize", value = "101"),
+                        @HystrixProperty(name = "keepAliveTimeMinutes", value = "2"),
+                        @HystrixProperty(name = "queueSizeRejectionThreshold", value = "15"),
+                        @HystrixProperty(name = "metrics.rollingStats.numBuckets", value = "12"),
+                        @HystrixProperty(name = "metrics.rollingStats.timeInMilliseconds", value = "1440")
+        })
+	@RequestMapping(method = RequestMethod.POST)
+	public void write(@RequestBody Todo r) {
+		// this.output.send(MessageBuilder.withPayload(r.getReservationName()).build());
+		System.out.println(r.getTitle());
+		todoReader.write(r);
+	}
+	
+	public void fallbackwrite()
+	{
+		
+	}
+	
 }
 
 
